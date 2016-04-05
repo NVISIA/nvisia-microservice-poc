@@ -1,0 +1,112 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+apply plugin: 'docker'
+apply plugin: 'application'
+apply plugin: 'groovy'
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.2.2.RELEASE")
+        classpath 'se.transmode.gradle:gradle-docker:1.2'
+        classpath 'org.codehaus.groovy:groovy-backports-compat23:2.3.5'
+    }
+}
+
+jar {
+    baseName = 'nvisia-microservice-poc'
+    version =  '0.1.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web")
+    compile("org.springframework.boot:spring-boot-starter-actuator")
+    compile("org.codehaus.jackson:jackson-mapper-asl:1.9.2")
+    // Swagger
+    compile ("com.mangofactory:swagger-springmvc:0.9.4")
+    compile ("org.scala-lang:scala-library:2.10.4")
+    compile("org.codehaus.groovy:groovy-all:2.3.6")
+    // Testing frameworks
+    compile("org.springframework:spring-test")
+    testCompile(
+            ["junit:junit:4.12"],
+            ["org.mockito:mockito-all:1.9.5"],
+            ["org.codehaus.groovy:groovy:2.3.6"],
+            ["org.codehaus.groovy.modules.http-builder:http-builder:0.7+"]
+    )
+}
+
+test {
+    // Explicitly test with Junit.
+    useJUnit()
+
+    // Use "exclude" to remove integration tests from build
+    // i.e exclude 'com/base/integration/**
+
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.3'
+}
+
+// This is used when the Application plugin builds the distribution. Need
+// to tell startup script to use the Production profile.
+startScripts {
+    defaultJvmOpts = ["-Dspring.profiles.active=prod"]
+}
+
+sourceCompatibility = 1.7
+mainClassName = 'com.elsevier.eols.provisioning.Application'
+
+// DOCKER CONFIGURATION
+group = 'eols'
+
+// This is used when the Application plugin builds the distribution. Need
+// to tell startup script to use the Production profile by default. Override
+// per environment with system property -Denv=environment_name
+String environment = System.getProperty("env")
+
+String containerVersion = System.getProperty("version")
+
+docker {
+    baseImage "elsols.artifactoryonline.com/eols/tio-centos7-java7"
+    maintainer 'Rav Tonsiengsom ravt@nvisia.com'
+}
+
+distDocker {
+    exposePort 8080
+}
+
+task tagDocker(type: Exec, dependsOn: 'distDocker') {
+    if (environment && containerVersion) {
+        println "Tagging with environment $environment and version $version"
+        commandLine 'docker', 'tag', '-f', "${project.group}/${applicationName}", "elsols.artifactoryonline.com/${project.group}/${applicationName}:${environment}-${containerVersion}"
+    } else if (environment) {
+        println "Tagging with environment $environment only."
+        commandLine 'docker', 'tag', '-f', "${project.group}/${applicationName}", "elsols.artifactoryonline.com/${project.group}/${applicationName}:${environment}"
+    } else {
+        println "Tagging LATEST"
+        commandLine 'docker', 'tag', '-f', "${project.group}/${applicationName}", "elsols.artifactoryonline.com/${project.group}/${applicationName}"
+    }
+}
+
+task artifactoryDockerPublish(type: Exec, dependsOn: 'tagDocker') {
+    if (environment && containerVersion) {
+        commandLine 'docker', 'push', "elsols.artifactoryonline.com/${project.group}/${applicationName}:${environment}-${containerVersion}"
+    } else if (environment) {
+        commandLine 'docker', 'push', "elsols.artifactoryonline.com/${project.group}/${applicationName}:${environment}"
+    } else {
+        println "Pushing LATEST to Hub"
+        commandLine 'docker', 'push', "elsols.artifactoryonline.com/${project.group}/${applicationName}"
+    }
+}
+// END DOCKER CONFIGURATION

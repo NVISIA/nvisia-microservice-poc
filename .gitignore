@@ -1,0 +1,41 @@
+# Operating System Files
+
+*.DS_Store
+Thumbs.db
+*.sw?
+.#*
+*#
+*~
+*.sublime-*
+*.log
+
+# Build Artifacts
+
+.gradle/
+build/distributions/
+build/docs/
+build/libs/
+build/reports/
+build/resources/
+build/scripts/
+build/test-results/
+build/docker/*
+!build/docker/postgres/
+build/tmp
+build/classes
+target/
+bin/
+
+# Eclipse Project Files
+
+.classpath
+.project
+.settings/
+
+# IntelliJ IDEA Files
+
+*.iml
+*.ipr
+*.iws
+*.idea
+/build/

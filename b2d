@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+docker build -t eols/nvisia-microservice-poc build/docker
+docker tag -f eols/nvisia-microservice-poc elsols.artifactoryonline.com/eols/nvisia-microservice-poc$1
+docker push elsols.artifactoryonline.com/eols/nvisia-microservice-poc$1
